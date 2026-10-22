@@ -68,6 +68,43 @@ function drain(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Boot-time recovery
+// ---------------------------------------------------------------------------
+
+/**
+ * Jobs live in the database but execute inside this process. On startup every
+ * queued/running job is by definition an orphan (a restart killed its worker -
+ * deploy, crash, or instance recycle). Mark them failed so the UI offers
+ * Retry, which resumes from the checkpoints persisted before the restart.
+ */
+export async function recoverOrphanedJobs(): Promise<number> {
+  const res = await Job.updateMany(
+    { status: { $in: ['queued', 'running'] } },
+    {
+      $set: {
+        status: 'failed',
+        error: {
+          code: 'INTERRUPTED',
+          message: 'The server restarted while this job was running. Retry resumes it from the last completed step.',
+        },
+        finishedAt: new Date(),
+      },
+      $push: {
+        progress: {
+          step: 'interrupted',
+          message: 'Server restarted; the job can be retried from its checkpoints',
+          at: new Date().toISOString(),
+        },
+      },
+    },
+  );
+  if (res.modifiedCount > 0) {
+    console.warn(`[jobs] marked ${res.modifiedCount} orphaned job(s) failed after restart`);
+  }
+  return res.modifiedCount;
+}
+
+// ---------------------------------------------------------------------------
 // Execution
 // ---------------------------------------------------------------------------
 

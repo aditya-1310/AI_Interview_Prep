@@ -11,7 +11,7 @@ import { connectDb } from './db';
 import { authRouter } from './routes/auth';
 import { kitsRouter } from './routes/kits';
 import { errorHandler } from './middleware/errors';
-import { setGenerator } from './jobs/runner';
+import { recoverOrphanedJobs, setGenerator } from './jobs/runner';
 import type { KitGenerator } from './core/ports';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -150,6 +150,10 @@ export async function wireGeneratorFromPipeline(
 async function main(): Promise<void> {
   await connectDb();
   console.log('[api] mongo connected');
+  const recovered = await recoverOrphanedJobs();
+  if (recovered > 0) {
+    console.warn(`[api] ${recovered} interrupted job(s) marked failed - their kits show a Retry button`);
+  }
   const wired = await wireGeneratorFromPipeline();
   if (!wired) {
     console.warn(
