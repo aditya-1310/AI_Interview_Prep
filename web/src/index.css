@@ -1,1 +1,13 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #020617; /* slate-950, avoids a white flash before hydration */
+}
