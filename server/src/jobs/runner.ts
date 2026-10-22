@@ -76,10 +76,17 @@ function drain(): void {
  * queued/running job is by definition an orphan (a restart killed its worker -
  * deploy, crash, or instance recycle). Mark them failed so the UI offers
  * Retry, which resumes from the checkpoints persisted before the restart.
+ * Kits that were still pending generation flip to 'failed' as well so the
+ * dashboard and the kit page agree with the job state; kits that were already
+ * ready keep their status (an interrupted regeneration is not a broken kit).
  */
 export async function recoverOrphanedJobs(): Promise<number> {
+  const orphans = await Job.find({ status: { $in: ['queued', 'running'] } })
+    .select('kitId')
+    .lean<Array<{ _id: unknown; kitId: unknown }>>();
+  if (orphans.length === 0) return 0;
   const res = await Job.updateMany(
-    { status: { $in: ['queued', 'running'] } },
+    { _id: { $in: orphans.map((o) => o._id) } },
     {
       $set: {
         status: 'failed',
@@ -98,9 +105,15 @@ export async function recoverOrphanedJobs(): Promise<number> {
       },
     },
   );
-  if (res.modifiedCount > 0) {
-    console.warn(`[jobs] marked ${res.modifiedCount} orphaned job(s) failed after restart`);
-  }
+  const kitIds = orphans.map((o) => o.kitId);
+  const kits = await Kit.updateMany(
+    { _id: { $in: kitIds }, status: 'pending' },
+    { $set: { status: 'failed' } },
+  );
+  console.warn(
+    `[jobs] marked ${res.modifiedCount} orphaned job(s) failed after restart` +
+      ` (${kits.modifiedCount} still-pending kit(s) flipped to failed)`,
+  );
   return res.modifiedCount;
 }
 
