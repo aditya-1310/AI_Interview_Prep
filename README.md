@@ -105,7 +105,7 @@ Scheduling and coverage are deliberately never delegated to the model — the br
 Every question/flashcard carries `origin` (`generated`|`manual`), `item_state` (`pristine`|`edited`) and `pinned`.
 
 - Regenerating a section replaces only **pristine generated** items. Manual, edited and pinned items always survive.
-- Sections not being regenerated are untouched. Regeneration writes onto the freshest kit document, so edits made while a regeneration is running are preserved (the merge is per-item, server-side).
+- Sections not being regenerated are untouched. Regeneration applies onto the freshest kit document when it finishes, so edits made **while a regeneration is running** are preserved: concurrent edits win over the regenerated content, questions added meanwhile are kept (a regenerated item whose id collides with one you just added gets a fresh id), deletions stay deleted, and a brief you edited mid-run is never overwritten. This merge behavior is pinned by tests (`server/tests/api-regen-merge.test.ts`).
 - After a category regeneration the schedule is repaired in code: removed ids dropped, new questions slotted into the best-matching day, full rebuild only if a day was left empty.
 - Deleting a question repairs schedule references and recomputes coverage; deleting a requirement strips its references everywhere.
 

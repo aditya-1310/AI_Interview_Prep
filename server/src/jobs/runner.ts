@@ -8,6 +8,7 @@
 import { ApiError } from '../middleware/errors';
 import { Job, type JobHydrated } from '../models/Job';
 import { Kit, type KitDoc, type KitHydrated } from '../models/Kit';
+import { nextId } from '../core/ids';
 import { repairScheduleAfterRegen, recomputeCoverageInPlace } from '../core/kitState';
 import { recomputeSchedule } from '../core/schedule';
 import { PipelineError, type KitGenerator, type PipelineResult, type RunContext, type Section } from '../core/ports';
@@ -148,8 +149,15 @@ function mergedWarnings(kit: KitDocument, warnings: Warning[] | undefined): Warn
 
 /**
  * Merge a section regeneration (produced against `snapshot`) onto `fresh`,
- * the latest document state. Only the section being regenerated is replaced;
- * concurrent user edits to other sections always win.
+ * the latest document state. The regeneration result is an INTENT - "replace
+ * the pristine generated items of this category with these new ones" /
+ * "rewrite the brief" - and that intent is applied against the live document,
+ * so work the user did while the regeneration was running always wins:
+ *  - edits to surviving questions keep the fresh version
+ *  - questions added during the run are kept; regenerated items that collide
+ *    with them get new ids instead of dropping either side
+ *  - questions deleted during the run stay deleted (never resurrected)
+ *  - a brief the user edited during the run is not overwritten
  */
 export function mergeRegeneratedSection(
   fresh: KitDocument,
@@ -159,21 +167,54 @@ export function mergeRegeneratedSection(
 ): KitDocument {
   fresh.warnings = mergedWarnings(fresh, result.warnings);
   if (section === 'brief') {
-    fresh.company_brief = result.company_brief;
+    // Only apply the rewritten brief if the user has not edited it since the
+    // regeneration started; their words win.
+    if (sameBrief(fresh.company_brief, snapshot.company_brief)) {
+      fresh.company_brief = result.company_brief;
+    }
     return fresh;
   }
   if (section === 'schedule') {
     fresh.schedule = result.schedule;
     return fresh;
   }
-  // Question categories: take the regenerated list, then repair the schedule
-  // for removed/added ids (core/kitState) and recompute coverage.
-  const snapshotIds = new Set(snapshot.questions.map((q) => q.id));
-  const resultIds = new Set(result.questions.map((q) => q.id));
-  const removedIds = [...snapshotIds].filter((id) => !resultIds.has(id));
-  const addedIds = [...resultIds].filter((id) => !snapshotIds.has(id));
-  fresh.questions = result.questions;
+  const snapshotById = new Map(snapshot.questions.map((q) => [q.id, q] as const));
+  const finalIds = new Set<string>();
+  const merged: KitDocument['questions'] = [];
+  // Keep everything currently in the kit EXCEPT the questions that are still
+  // pristine, generated, unpinned items of the regenerated category - those
+  // are the only things a category regeneration replaces. Reading this from
+  // `fresh` (not the snapshot) is what protects concurrent edits: a question
+  // the user edited or pinned mid-run is no longer pristine here.
+  for (const q of fresh.questions) {
+    const replacedByRegen =
+      q.category === section && q.origin === 'generated' && q.item_state === 'pristine' && !q.pinned;
+    if (replacedByRegen) continue;
+    merged.push(q);
+    finalIds.add(q.id);
+  }
+  // Append the regenerated items. Snapshot-derived entries are skipped (the
+  // live versions above are fresher); brand-new items are added, re-iding any
+  // that collide with a question the user added during the run.
+  for (const q of result.questions) {
+    if (snapshotById.has(q.id)) continue;
+    if (finalIds.has(q.id)) {
+      const id = nextId('q', [...finalIds]);
+      merged.push({ ...q, id });
+      finalIds.add(id);
+    } else {
+      merged.push(q);
+      finalIds.add(q.id);
+    }
+  }
+  fresh.questions = merged;
+  const removedIds = [...snapshotById.keys()].filter((id) => !finalIds.has(id));
+  const addedIds = [...finalIds].filter((id) => !snapshotById.has(id));
   return repairScheduleAfterRegen(fresh, removedIds, addedIds);
+}
+
+function sameBrief(a: KitDocument['company_brief'], b: KitDocument['company_brief']): boolean {
+  return a.summary === b.summary && a.what_they_do === b.what_they_do;
 }
 
 /** Optimistic write helper: guarded on version, retried on losing races. */
