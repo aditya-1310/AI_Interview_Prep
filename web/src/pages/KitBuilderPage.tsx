@@ -54,6 +54,7 @@ export default function KitBuilderPage() {
 
   const [jobTriggered, setJobTriggered] = useState(false);
   const [retrying, setRetrying] = useState(false);
+  const [retryClicking, setRetryClicking] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('brief');
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -147,14 +148,18 @@ export default function KitBuilderPage() {
 
   const handleRetry = async () => {
     if (!id) return;
-    setRetrying(true);
+    setRetryClicking(true);
     try {
+      // Create the new job BEFORE arming the poller: arming first makes the
+      // first probe read the OLD failed job and toast a stale failure.
       await kitsApi.retryJob(id);
       triggerJobOptimistically();
+      setRetrying(true);
       void refresh();
     } catch (e) {
-      setRetrying(false);
       toast(errMessage(e), 'error');
+    } finally {
+      setRetryClicking(false);
     }
   };
 
@@ -245,7 +250,7 @@ export default function KitBuilderPage() {
           <span className="text-xs opacity-80">
             {job?.error?.code ? `Error code: ${job.error.code}` : undefined}
           </span>
-          <Button size="sm" icon={RotateCcw} onClick={() => void handleRetry()} pending={retrying && !running}>
+          <Button size="sm" icon={RotateCcw} onClick={() => void handleRetry()} pending={retryClicking || (retrying && !running)}>
             Retry generation
           </Button>
         </ErrorBanner>

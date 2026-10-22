@@ -460,6 +460,10 @@ kitsRouter.post(
     await assertNoRunningJobForKit(String(doc._id));
     await assertJobThrottle(user.id);
     getGenerator();
+    // The kit goes back to 'generating' everywhere the moment it is retried:
+    // dashboard card, kit header chip and the job poller all read kit.status,
+    // so they must not keep saying "failed" while the retry runs.
+    await Kit.updateOne({ _id: doc._id }, { $set: { status: 'pending' } });
     // Copy the old job's checkpoints so the pipeline resumes from the last
     // completed stage instead of redoing LLM calls.
     const job = await Job.create({

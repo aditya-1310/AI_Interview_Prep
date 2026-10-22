@@ -52,8 +52,12 @@ export function useJobPolling(
         setJob(next);
         prevStatusRef.current = next.status;
         if (isSettled(next.status)) {
-          // Announce only jobs we were watching (flagged active, or observed in flight).
-          if (active || inFlight(prev)) {
+          // Announce only what we actually watched settle: either we observed
+          // the job in flight, or we landed on it already completed (worth a
+          // refresh + success path). A first observation that is ALREADY
+          // failed - e.g. the previous job read during a retry handshake -
+          // must never toast again.
+          if (inFlight(prev) || next.status === 'completed') {
             onSettledRef.current(next);
           }
           return; // settled: stop polling

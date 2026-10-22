@@ -50,6 +50,15 @@ export default function DashboardPage() {
     void load();
   }, [load]);
 
+  // Cards must not go stale while generation runs elsewhere: refresh the list
+  // periodically for as long as any kit is pending, then stop.
+  const anyPending = (items ?? []).some((k) => k.status === 'pending');
+  useEffect(() => {
+    if (!anyPending) return;
+    const timer = setInterval(() => void load(), 8_000);
+    return () => clearInterval(timer);
+  }, [anyPending, load]);
+
   const deleteKit = async (item: KitListItem) => {
     try {
       await kitsApi.remove(item.id);
