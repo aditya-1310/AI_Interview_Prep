@@ -109,14 +109,17 @@ export async function searchDiscussions(company: string, opts: DiscussionOptions
   const perCallDelayMs = opts.perCallDelayMs ?? 600;
   const items: DiscussionItem[] = [];
   const warnings: Warning[] = [];
+  const skipped: string[] = [];
   const query = `${company} interview`;
 
+  // A source that cannot be reached is a logged detail, not user-facing noise:
+  // what the kit reports honestly is whether any discussion was actually found.
   try {
     const url = `${HN_SEARCH_URL}?query=${encodeURIComponent(query)}&tags=story&hitsPerPage=5`;
     items.push(...parseHn(await fetchJson(url, { 'user-agent': USER_AGENT }, timeoutMs, fetcher)));
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    warnings.push({ code: 'SOURCE_SKIPPED', message: `Hacker News discussion search skipped: ${message}` });
+    skipped.push('Hacker News');
+    console.warn('[discussion] Hacker News search skipped:', err instanceof Error ? err.message : err);
   }
 
   await sleep(perCallDelayMs);
@@ -131,14 +134,20 @@ export async function searchDiscussions(company: string, opts: DiscussionOptions
     );
     items.push(...parseReddit(data));
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    warnings.push({ code: 'SOURCE_SKIPPED', message: `Reddit discussion search skipped: ${message}` });
+    skipped.push('Reddit');
+    console.warn('[discussion] Reddit search skipped:', err instanceof Error ? err.message : err);
   }
 
   if (items.length === 0) {
+    const unavailable =
+      skipped.length === 2
+        ? ' (both Hacker News and Reddit were unavailable at the time)'
+        : skipped.length === 1
+          ? ` (${skipped[0]} was unavailable at the time)`
+          : '';
     warnings.push({
       code: 'NO_DISCUSSION_FOUND',
-      message: `no public discussion found for "${company} interviews" (HN and Reddit came up empty or were skipped)`,
+      message: `No public discussion about ${company}'s interviews could be found${unavailable}.`,
     });
   }
 

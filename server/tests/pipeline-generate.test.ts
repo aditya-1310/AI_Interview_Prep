@@ -114,6 +114,7 @@ describe('company brief honesty', () => {
     };
     const { brief, warnings } = await companyBrief(llm, crawl, { items: [], warnings: [] }, { company: 'Acme', roleTitle: 'E' });
     expect(warnings.some((w) => w.code === 'BRIEF_FAILED')).toBe(true);
-    expect(brief.summary.toLowerCase()).toContain('brief generation failed');
+    expect(warnings.find((w) => w.code === 'BRIEF_FAILED')?.message).not.toMatch(/HTTP|gemini|model/i);
+    expect(brief.summary.toLowerCase()).toContain('ai service was unavailable');
   });
 });

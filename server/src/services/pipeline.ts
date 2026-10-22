@@ -96,12 +96,13 @@ function thinExtractionWarnings(extraction: ExtractedRole): Warning[] {
   if (extraction.requirements.length === 0) {
     warnings.push({
       code: 'THIN_JD',
-      message: `the job description (jd_chars=${extraction.jdChars}) yielded no extractable requirements; the kit is intentionally thin rather than invented`,
+      message:
+        'The job description is too short to extract any concrete requirements, so this kit is intentionally thin rather than invented.',
     });
   } else if (extraction.requirements.length <= 2 && extraction.jdChars < 400) {
     warnings.push({
       code: 'THIN_JD',
-      message: `the job description is short (jd_chars=${extraction.jdChars}) and yielded only ${extraction.requirements.length} requirements`,
+      message: `The job description is short and yielded only ${extraction.requirements.length} requirements.`,
     });
   }
   return warnings;
@@ -112,7 +113,8 @@ function crawlGapWarnings(crawl: CrawlResult): Warning[] {
   if (crawl.pages.length > 0 && crawl.hiringPages.length === 0) {
     warnings.push({
       code: 'NO_HIRING_PAGE',
-      message: 'crawled the company site but found no hiring/careers page; company-fit questions use generic process themes',
+      message:
+        "The company website has no discoverable hiring or careers page, so company-fit questions use general themes instead of their specific process.",
     });
   }
   return warnings;

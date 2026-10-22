@@ -624,7 +624,12 @@ export async function crawlCompanySite(entryUrl: string, opts: CrawlOptions = {}
       hiringPages,
       infoPages: [],
       company: 'Unknown',
-      warnings: [{ code: 'SITE_UNREACHABLE', message: `invalid company URL: ${message}` }],
+      warnings: [
+        {
+          code: 'SITE_UNREACHABLE',
+          message: `The company website address couldn't be used (${message}), so research was skipped and the kit was built from the job description alone.`,
+        },
+      ],
     };
   }
 
@@ -662,7 +667,10 @@ export async function crawlCompanySite(entryUrl: string, opts: CrawlOptions = {}
         infoPages: [],
         company: guessCompanyName(entryHost, '', ''),
         warnings: [
-          { code: 'SITE_UNREACHABLE', message: `${entry.href}: entry path is disallowed by the site's robots.txt` },
+          {
+            code: 'SITE_UNREACHABLE',
+            message: `The company website (${entry.origin}) disallows automated access, so research was skipped and the kit was built from the job description alone.`,
+          },
         ],
       };
     }
@@ -684,7 +692,11 @@ export async function crawlCompanySite(entryUrl: string, opts: CrawlOptions = {}
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    warnings.push({ code: 'SITE_UNREACHABLE', message: `${entryUrl}: ${message}` });
+    console.warn(`[crawl] entry fetch failed for ${entryUrl}:`, message);
+    warnings.push({
+      code: 'SITE_UNREACHABLE',
+      message: `The company website (${entryUrl}) could not be reached, so research was skipped and the kit was built from the job description alone.`,
+    });
   }
 
   void firstHtml; // kept for debugging; text extraction already consumed the page

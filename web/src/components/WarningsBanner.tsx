@@ -28,9 +28,7 @@ export function WarningsBanner({ warnings }: { warnings: Warning[] }) {
       <div className="flex items-start gap-2.5">
         <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            This kit was generated with {warnings.length === 1 ? 'a gap' : `${warnings.length} gaps`}
-          </p>
+          <p className="text-sm font-semibold">Research notes</p>
           <ul className="mt-1.5 space-y-1">
             {warnings.map((w, i) => (
               <li key={`${w.code}-${i}`} className="break-words text-sm opacity-90">

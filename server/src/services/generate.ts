@@ -216,7 +216,7 @@ export async function companyBrief(
       warnings: [
         {
           code: 'NO_COMPANY_RESEARCH',
-          message: `no pages or public discussion could be retrieved for "${ctx.company}"; brief reports the gap honestly`,
+          message: `Nothing about ${ctx.company} could be retrieved from their website or public discussion, so the company brief reports the gap honestly instead of guessing.`,
         },
       ],
     };
@@ -267,9 +267,18 @@ export async function companyBrief(
       warnings,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    warnings.push({ code: 'BRIEF_FAILED', message: `company brief generation failed: ${message}` });
-    return { brief: honestEmptyBrief(ctx.company, 'brief generation failed'), warnings };
+    const detail = err instanceof Error ? err.message : String(err);
+    console.warn('[generate] company brief LLM call failed, using the honest fallback:', detail);
+    warnings.push({
+      code: 'BRIEF_FAILED',
+      message:
+        "The company brief couldn't be written just now because the AI service was unavailable. " +
+        'It has been filled in honestly from the pages already fetched — use Regenerate on the Brief tab to try again.',
+    });
+    return {
+      brief: honestEmptyBrief(ctx.company, 'the AI service was unavailable just now'),
+      warnings,
+    };
   }
 }
 
