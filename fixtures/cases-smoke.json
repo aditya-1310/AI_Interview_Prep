@@ -1,0 +1,14 @@
+[
+  {
+    "id": "case-01-acme-local",
+    "jd": "Senior Full-Stack Engineer\n\nAcme Analytics | Remote (EU/US timezones) | Full-time\n\nAbout the role\nWe are looking for a senior full-stack engineer to join the Pulse ingestion squad. You will design, build and operate the services that collect product telemetry from over a thousand engineering teams, and the React front end their teams live in every day.\n\nWhat you will do\n- Build and operate high-throughput TypeScript services on Node.js (Kafka ingestion, funnel APIs)\n- Ship polished React front ends for funnel exploration and alerting\n- Model and evolve PostgreSQL schemas handling billions of events\n- Own services end to end: commit, deploy, on-call (one week in eight)\n- Mentor mid-level engineers through design reviews and pairing\n\nWhat we require (must have)\n- 5+ years of professional experience building production web applications\n- Strong TypeScript and modern React experience\n- Solid Node.js backend experience: streaming, queues, REST APIs\n- Hands-on PostgreSQL experience: schema design, query tuning, migrations\n- Experience deploying and operating services on AWS\n- You write tests as a matter of course and have worked with CI/CD pipelines\n- Clear written communication in an async, remote-first culture\n\nNice to have\n- Experience with Kafka or other streaming systems\n- Kubernetes in production\n- GraphQL API design\n- Experience mentoring junior engineers formally\n\nCompensation\nSalary band for this role is published in our handbook. We pay for take-home time if you ask.",
+    "company_url": "http://localhost:8099/acme/",
+    "days": 5
+  },
+  {
+    "id": "case-03-two-line-stub",
+    "jd": "We are hiring a developer.\nApply now.",
+    "company_url": "https://example.com",
+    "days": 2
+  }
+]

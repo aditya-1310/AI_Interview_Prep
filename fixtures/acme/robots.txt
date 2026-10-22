@@ -1,0 +1,4 @@
+# Acme Analytics fixtures - robots for the local evaluation site
+User-agent: *
+Disallow: /private/
+

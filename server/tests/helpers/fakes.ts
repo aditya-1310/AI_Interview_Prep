@@ -69,7 +69,8 @@ export class FakeLlm implements LlmClient {
     if (handler === undefined) {
       throw new Error(`FakeLlm: no handler for "${schemaName}"`);
     }
-    return handler as T;
+    const value = typeof handler === 'function' ? (handler as () => unknown)() : handler;
+    return value as T;
   }
 
   async generateText(): Promise<string> {
