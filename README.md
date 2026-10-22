@@ -59,7 +59,7 @@ node fixtures/serve.mjs &          # serves fixtures/acme on http://localhost:80
 npm run evaluate -- --input fixtures/cases.json --output kits.json
 ```
 
-Five cases complete well inside the fifteen-minute budget (typical: 3–6 minutes with two cases in flight).
+Five cases complete well inside the fifteen-minute budget. Verified full run: **5/5 ok in ~13.5 minutes wall-clock** — measured with the primary model's daily quota already exhausted (every LLM call served by the fallback model after rate-limit backoff), per-case times 45–282 s. With a fresh key it is comfortably faster. All kits validate against Appendix A on every run: exact day counts (tested 2–7 days; the algorithm covers 1–60), integer minutes, valid question references, zero uncovered must-haves. Edge cases verified in the same run: a two-line JD produces an honest thin kit (`THIN_JD`, nothing invented), an unreachable company site stays `ok` with a `SITE_UNREACHABLE` warning, and a site with no hiring page reports `NO_HIRING_PAGE` without failing.
 
 ## Architecture
 

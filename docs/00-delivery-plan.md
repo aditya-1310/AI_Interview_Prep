@@ -1,6 +1,6 @@
 # AI Interview Prep Kit Delivery Plan
 
-Status: Scope agreed; executing compressed delivery on 22 October 2026 (see `02-edd.md` for the agreed design and `03-api-contract.md` for the build seams)
+Status: Delivered 22 October 2026 — design in `02-edd.md`, verified end-to-end (unit tests 128/128, 5/5 batch cases ok, app exercised in-browser). See README for evidence.
 
 Prepared: 20 October 2026
 
