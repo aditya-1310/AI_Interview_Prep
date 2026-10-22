@@ -40,6 +40,7 @@ Production-style single service: `npm run build && npm start` (serves the client
 | --- | --- |
 | `GEMINI_API_KEY` | Google Gemini API key (https://aistudio.google.com/apikey, free tier) |
 | `GEMINI_MODEL` / `GEMINI_FALLBACK_MODELS` | Primary model and comma-separated fallbacks used on rate limits/outages |
+| `GEMINI_MIN_CALL_GAP_MS` | Minimum gap between LLM calls (free-tier pacing). Default 4500 ms; on a fresh key with quota headroom, 2000 ms makes batches noticeably faster |
 | `MONGODB_URI` | MongoDB connection string |
 | `SESSION_SECRET` | Signing secret for session cookies |
 | `PORT` | API/client port (default 8787) |
