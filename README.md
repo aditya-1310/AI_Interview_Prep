@@ -6,7 +6,7 @@ Built for assessment **FS-AI-INTERVIEW-01**.
 
 ## Live demo
 
-- App: `<deployment URL>` (single service — frontend and API are both reachable at this origin)
+- App: https://interview-prep-kit-j9oh.onrender.com (single service — frontend and API are both reachable at this origin; the free instance sleeps when idle, so the first request can take ~30–60 s to wake)
 - Repository: https://github.com/aditya-1310/AI_Interview_Prep
 
 ## Tech stack and why
