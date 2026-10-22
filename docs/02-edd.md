@@ -21,9 +21,9 @@ npm workspaces at the root, no build-output juggling: the server runs TypeScript
 /                     root workspace: dev/build/test/evaluate scripts
   fixtures/           local acme company site + batch cases.json for local e2e
   server/
-    src/contracts/    kit types, Zod schemas, pipeline port interfaces
+    src/core/         kit contracts (Zod), coverage, scheduling, kit-state merge
     src/services/     llm, extract, research (crawl + discussion), generate,
-                      coverage, schedule, pipeline, kit-state
+                      pipeline
     src/models/       User, Kit, Job (Mongoose)
     src/routes/       auth, kits, jobs
     src/middleware/   session auth, error handling, rate limiting
@@ -37,7 +37,7 @@ npm workspaces at the root, no build-output juggling: the server runs TypeScript
 One orchestration module used identically by the HTTP app and the CLI. Steps, each with progress events:
 
 1. **Extraction** (LLM, JSON-schema mode): JD text → role fields + requirements (`kind`, `must|nice` taken from wording). Thin JDs produce few requirements; the prompt forbids invention.
-2. **Site crawl** (code): fetch `company_url`, parse + rank same-host links (keyword scoring over anchor text and path: careers, hiring, interview, jobs, about, team, engineering, handbook, blog), fetch the top ~8 ranked pages. Honors robots.txt, per-host rate limit (~1 req/750ms), 10s timeout, 500KB size cap, HTML/text content types only, failures skipped and recorded.
+2. **Site crawl** (code): ranked iterative frontier from `company_url` — fetch a page, extract same-host links, score them (keyword scoring over anchor text and path: careers, hiring, interview, jobs, about, team, engineering, handbook, blog), fetch the highest-scoring pages, and re-scan those for further links up to depth 3 within a total budget of ~15 pages, so a hiring page buried behind an about or handbook page is still found. Honors robots.txt, per-host rate limit (~1 req/750ms), 10s timeout, 500KB size cap, HTML/text content types only, per-hop URL + resolved-IP re-validation (redirects included), failures skipped and recorded.
 3. **Discussion search** (code): bounded search of public discussion (Hacker News Algolia API, Reddit search JSON), skip-and-record on failure or nothing-found.
 4. **Company brief** (LLM): from crawled pages + discussion, with `sources`; honest "could not find" language when research came up empty.
 5. **Questions** (LLM, one call **per category**: technical, behavioural, system-design, company-fit): each question references requirement ids; hiring evidence shapes behavioural/company-fit prompts.
@@ -110,4 +110,4 @@ Single service on a free tier (Render blueprint in repo). Env vars documented in
 
 - No SSR (see §1). Practice ordering is a simple confidence-weighted sort (unseen = lowest confidence, then ascending confidence, least-recently-practiced first), not full spaced repetition — chosen for explainability.
 - Discussion search relies on free public endpoints (HN Algolia, Reddit JSON); both can be thin for small companies — reported honestly rather than substituted with fabrication.
-- The creative feature is deferred until the mandatory scope is green.
+- Creative feature: a "weak spots" report derived client-side from practice confidence and coverage — deliberately thin, chosen over a heavier feature to protect the mandatory scope on the deadline.

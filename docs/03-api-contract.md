@@ -47,15 +47,19 @@ Internal working document for implementation. Fixes the seams between the web cl
 
 Auth: `POST /auth/register {email,password}` · `POST /auth/login` · `POST /auth/logout` · `GET /auth/me → {user:{id,email}}`
 
-- `POST /kits {jd, companyUrl, days}` → `{kitId, jobId}` — dedupes on running job with same inputHash.
+- `POST /kits {jd, companyUrl, days, force?}` → `{kitId, jobId}` — dedupes on inputHash: if a **running** job with the same hash exists, returns that job; if a **completed** kit with the same hash exists, returns `{kitId, duplicate:true, jobId:null}` unless `force:true`.
 - `POST /kits/batch {cases:[{jd, companyUrl, days}]}` → `{jobs:[{kitId, jobId}]}` (JSON file of pairs parsed client-side).
 - `GET /kits` → `[{id, company, role, status, days, createdAt}]`
 - `GET /kits/:id` → full kit document (includes `version`)
 - `DELETE /kits/:id` → 204
 - `GET /kits/:id/job` → latest job `{id, status, progress, error?}`
 - `POST /kits/:id/job/retry` → `{jobId}` — resumes from checkpoints.
-- `POST /kits/:id/regenerate {section}` where section ∈ `brief | technical | behavioural | system-design | company-fit | schedule` (schedule accepts optional `{days}`) → `{jobId}`
+- `POST /kits/:id/regenerate {section}` where section ∈ `brief | technical | behavioural | system-design | company-fit | schedule` (schedule accepts optional `{days}`) → `{jobId}`. After a question-category regeneration the server repairs the schedule in place (drops removed ids, slots new questions into matching days, rebuilds only if a day ends up empty) — `core/kitState.ts` implements this.
 - `PATCH /kits/:id/brief {summary?, what_they_do?}`
+- `PATCH /kits/:id/role {title?, seniority?, responsibilities?}`
+- `POST /kits/:id/requirements {text, kind, priority}` → manual requirement (id `rN` allocated like questions)
+- `PATCH /kits/:id/requirements/:rid {text?, kind?, priority?}`
+- `DELETE /kits/:id/requirements/:rid` (strips references from questions/flashcards, recomputes coverage)
 - `POST /kits/:id/questions {category, prompt, answer_outline, difficulty, requirement_ids}` (manual → `origin:'manual'`)
 - `PATCH /kits/:id/questions/:qid` (any of prompt/answer_outline/difficulty/category/requirement_ids; sets `item_state:'edited'`)
 - `DELETE /kits/:id/questions/:qid` (repairs schedule + coverage in code)
@@ -88,4 +92,6 @@ Stage names for progress/checkpoints: `extract`, `crawl`, `discussion`, `brief`,
 
 ## Web client
 
-Routes: `/login`, `/register`, `/` (dashboard: kit list + new kit form + file upload), `/kits/:id` (builder: tabs for Brief · Questions · Flashcards · Schedule · warnings), `/kits/:id/practice`. Polls `GET /kits/:id/job` every 1500ms while a job is running. Inline edits are local-state-first, debounced PATCH (800ms) with `baseVersion`, conflict → toast + re-apply. Keyboard navigable, phone-first responsive, loading/empty/error states everywhere.
+Routes: `/login`, `/register`, `/` (dashboard: kit list + new kit form + file upload), `/kits/:id` (builder: tabs for Brief · Questions · Flashcards · Schedule · Weak spots · warnings), `/kits/:id/practice`. Polls `GET /kits/:id/job` every 1500ms while a job is running. Inline edits are local-state-first, debounced PATCH (800ms) with `baseVersion`, conflict → toast + re-apply. Keyboard navigable, phone-first responsive, loading/empty/error states everywhere.
+
+**Weak spots tab (creative feature, derived client-side — no backend needed):** aggregates practice confidence per requirement (via flashcard `requirement_ids`), uncovered must-haves, and never-practiced cards into a ranked "where you're weakest" list with a jump-to-practice link.
