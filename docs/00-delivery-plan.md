@@ -1,6 +1,6 @@
 # AI Interview Prep Kit Delivery Plan
 
-Status: Draft for scope review
+Status: Scope agreed; executing compressed delivery on 22 October 2026 (see `02-edd.md` for the agreed design and `03-api-contract.md` for the build seams)
 
 Prepared: 20 October 2026
 
